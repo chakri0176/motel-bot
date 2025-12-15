@@ -12,6 +12,7 @@ load_dotenv()
 
 app = FastAPI()
 
+# 1. Setup Groq LLM
 llm = ChatGroq(
     model="openai/gpt-oss-120b", 
     temperature=0.2,
@@ -20,7 +21,7 @@ llm = ChatGroq(
 
 tools = [check_room_availability, book_reservation]
 
-# 2. Define the Prompt (The "Sarah" Persona)
+# 2. Define the Prompt
 prompt = ChatPromptTemplate.from_messages([
     ("system", """
     You are 'Sarah', the front desk AI for Sunset Motel.
@@ -33,7 +34,7 @@ prompt = ChatPromptTemplate.from_messages([
     ("placeholder", "{agent_scratchpad}"),
 ])
 
-# 3. Create the Agent (Using the new 'Tool Calling' method)
+# 3. Create the Agent
 agent = create_tool_calling_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
@@ -58,6 +59,10 @@ async def websocket_endpoint(websocket: WebSocket):
                 continue
             
             if data['interaction_type'] == 'response_required':
+                # Check if transcript exists to avoid index errors
+                if not data['transcript']:
+                    continue
+                    
                 user_transcript = data['transcript'][-1]['content']
                 print(f"User said: {user_transcript}")
                 

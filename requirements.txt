@@ -1,9 +1,10 @@
 fastapi
-uvicorn[standard]
+uvicorn
 langchain
-langchain-community
-langchain-core
+langchain_community
+langchain_core
 langchain-groq
 supabase
 python-dotenv
 websockets
+pydantic
