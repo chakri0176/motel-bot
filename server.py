@@ -3,9 +3,7 @@ import json
 import asyncio
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from langchain_groq import ChatGroq
-from langchain.agents import AgentExecutor, create_react_agent
-from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
-from langchain_core.tools import render_text_description
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from tools import check_room_availability, book_reservation
 from dotenv import load_dotenv
 
@@ -13,54 +11,53 @@ load_dotenv()
 
 app = FastAPI()
 
-# 1. Setup Groq LLM
+# Setup Groq LLM
 llm = ChatGroq(
-    model="llama-3.3-70b-versatile",  # Updated to a valid model
+    model="llama-3.3-70b-versatile",
     temperature=0.2,
     groq_api_key=os.environ.get("GROQ_API_KEY")
 )
 
+# Bind tools to LLM
 tools = [check_room_availability, book_reservation]
+llm_with_tools = llm.bind_tools(tools)
 
-# 2. Define the Prompt (ReAct format)
-prompt = PromptTemplate.from_template("""
-You are 'Sarah', the front desk AI for Sunset Motel.
+# System message
+SYSTEM_MESSAGE = """You are 'Sarah', the front desk AI for Sunset Motel.
 - Your voice output is processed by TTS, so DO NOT use special characters, emojis, or markdown.
 - Be concise. Speak like a human receptionist, not a robot. 
 - Keep responses under 2 sentences.
 - If booking, ask for Name, Room Type, and Date one by one.
 
-You have access to the following tools:
+You have access to these tools:
+1. check_room_availability - Check if a room type is available
+2. book_reservation - Book a room for a guest"""
 
-{tools}
-
-Use the following format:
-
-Question: the input question you must answer
-Thought: you should always think about what to do
-Action: the action to take, should be one of [{tool_names}]
-Action Input: the input to the action
-Observation: the result of the action
-... (this Thought/Action/Action Input/Observation can repeat N times)
-Thought: I now know the final answer
-Final Answer: the final answer to the original input question
-
-Begin!
-
-Question: {input}
-Thought: {agent_scratchpad}
-""")
-
-# 3. Create the Agent
-agent = create_react_agent(llm, tools, prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)
+def execute_tools(tool_calls):
+    """Execute tool calls and return results"""
+    results = []
+    for tool_call in tool_calls:
+        tool_name = tool_call['name']
+        tool_args = tool_call['args']
+        
+        if tool_name == "check_room_availability":
+            result = check_room_availability.invoke(tool_args)
+        elif tool_name == "book_reservation":
+            result = book_reservation.invoke(tool_args)
+        else:
+            result = f"Unknown tool: {tool_name}"
+        
+        results.append(result)
+    
+    return results
 
 @app.websocket("/llm-websocket")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
+    conversation_history = [SystemMessage(content=SYSTEM_MESSAGE)]
     
     try:
-        # Send initial greeting to Retell
+        # Send initial greeting
         first_greeting = {
             "response_type": "response",
             "response_id": 0,
@@ -71,27 +68,53 @@ async def websocket_endpoint(websocket: WebSocket):
         await websocket.send_json(first_greeting)
 
         async for data in websocket.iter_json():
-            # Retell sends "interaction_response" events when user speaks
             if data['interaction_type'] == 'update_only':
                 continue
             
             if data['interaction_type'] == 'response_required':
-                # Check if transcript exists to avoid index errors
                 if not data['transcript']:
                     continue
                     
                 user_transcript = data['transcript'][-1]['content']
                 print(f"User said: {user_transcript}")
                 
-                # Run the Agent
                 try:
-                    ai_response = await agent_executor.ainvoke({"input": user_transcript})
-                    response_text = ai_response["output"]
+                    # Add user message to history
+                    conversation_history.append(HumanMessage(content=user_transcript))
+                    
+                    # Get LLM response
+                    response = await llm_with_tools.ainvoke(conversation_history)
+                    
+                    # Check if tools were called
+                    if hasattr(response, 'tool_calls') and response.tool_calls:
+                        print(f"Tool calls: {response.tool_calls}")
+                        
+                        # Execute tools
+                        tool_results = execute_tools(response.tool_calls)
+                        
+                        # Add tool results to history and get final response
+                        conversation_history.append(response)
+                        for result in tool_results:
+                            conversation_history.append(HumanMessage(content=f"Tool result: {result}"))
+                        
+                        # Get final response after tool execution
+                        final_response = await llm_with_tools.ainvoke(conversation_history)
+                        response_text = final_response.content
+                        conversation_history.append(final_response)
+                    else:
+                        response_text = response.content
+                        conversation_history.append(response)
+                    
+                    # Clean up response text
+                    response_text = response_text.strip()
+                    
                 except Exception as e:
                     print(f"Error: {e}")
+                    import traceback
+                    traceback.print_exc()
                     response_text = "I'm sorry, I missed that. Could you say it again?"
 
-                # Send Response to Retell
+                # Send Response
                 response_payload = {
                     "response_type": "response",
                     "response_id": data['response_id'],
@@ -103,3 +126,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 
     except WebSocketDisconnect:
         print("Client disconnected")
+    except Exception as e:
+        print(f"WebSocket error: {e}")
+        import traceback
+        traceback.print_exc()
