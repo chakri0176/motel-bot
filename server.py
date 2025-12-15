@@ -51,8 +51,10 @@ def execute_tools(tool_calls):
     
     return results
 
-@app.websocket("/llm-websocket")
-async def websocket_endpoint(websocket: WebSocket):
+# CHANGE 1: Update the route to accept the call_id
+@app.websocket("/llm-websocket/{call_id}")
+# CHANGE 2: Add call_id to the function arguments
+async def websocket_endpoint(websocket: WebSocket, call_id: str):
     await websocket.accept()
     conversation_history = [SystemMessage(content=SYSTEM_MESSAGE)]
     
@@ -92,7 +94,7 @@ async def websocket_endpoint(websocket: WebSocket):
                         # Execute tools
                         tool_results = execute_tools(response.tool_calls)
                         
-                        # Add tool results to history and get final response
+                        # Add tool results to history
                         conversation_history.append(response)
                         for result in tool_results:
                             conversation_history.append(HumanMessage(content=f"Tool result: {result}"))
@@ -125,8 +127,6 @@ async def websocket_endpoint(websocket: WebSocket):
                 await websocket.send_json(response_payload)
                 
     except WebSocketDisconnect:
-        print("Client disconnected")
+        print(f"Call {call_id} disconnected") # We can now print the call_id!
     except Exception as e:
         print(f"WebSocket error: {e}")
-        import traceback
-        traceback.print_exc()
