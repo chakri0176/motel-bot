@@ -43,7 +43,7 @@ Tech Stack
 Project Structure
 -----------------
 
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   .  ├── server.py          # Main FastAPI application with WebSocket endpoint  ├── tools.py           # LangChain tools for room operations  ├── requirements.txt   # Python dependencies  └── README.md         # Project documentation   `
+`   .  ├── server.py          # Main FastAPI application with WebSocket endpoint  ├── tools.py           # LangChain tools for room operations  ├── requirements.txt   # Python dependencies  └── README.md         # Project documentation   `
 
 Installation
 ------------
@@ -60,68 +60,51 @@ Installation
 ### Setup
 
 1.  **Clone the repository**
-    
 
-bash
-
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML   `git clone https://github.com/yourusername/sunset-motel-ai.git     cd sunset-motel-ai`
+`git clone https://github.com/yourusername/sunset-motel-ai.git     cd sunset-motel-ai`
 
 1.  **Install dependencies**
     
 
 bash
 
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML   `pip install -r requirements.txt`
+`pip install -r requirements.txt`
 
 1.  **Configure environment variables**Create a .env file in the project root:
     
 
 env
 
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML   `GROQ_API_KEY=your_groq_api_key_here     SUPABASE_URL=your_supabase_url_here     SUPABASE_SERVICE_KEY=your_supabase_service_key_here`
+`GROQ_API_KEY=your_groq_api_key_here     SUPABASE_URL=your_supabase_url_here     SUPABASE_SERVICE_KEY=your_supabase_service_key_here`
 
 1.  **Set up Supabase Database**Create two tables in your Supabase project:**Rooms Table:**
     
-
-sql
-
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML   `CREATE TABLE rooms (       id SERIAL PRIMARY KEY,       room_type VARCHAR(50) NOT NULL,       price_per_night DECIMAL(10,2) NOT NULL,       is_available BOOLEAN DEFAULT TRUE     );`
+`CREATE TABLE rooms (       id SERIAL PRIMARY KEY,       room_type VARCHAR(50) NOT NULL,       price_per_night DECIMAL(10,2) NOT NULL,       is_available BOOLEAN DEFAULT TRUE     );`
 
 **Bookings Table:**
 
-sql
-
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML   `CREATE TABLE bookings (       id SERIAL PRIMARY KEY,       guest_name VARCHAR(255) NOT NULL,       room_id INTEGER REFERENCES rooms(id),       check_in_date DATE NOT NULL,       created_at TIMESTAMP DEFAULT NOW()     );`
+`CREATE TABLE bookings (       id SERIAL PRIMARY KEY,       guest_name VARCHAR(255) NOT NULL,       room_id INTEGER REFERENCES rooms(id),       check_in_date DATE NOT NULL,       created_at TIMESTAMP DEFAULT NOW()     );`
 
 1.  **Seed sample data (optional)**
     
-
-sql
-
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML   `INSERT INTO rooms (room_type, price_per_night, is_available) VALUES     ('Queen', 89.99, TRUE),     ('King', 109.99, TRUE),     ('Suite', 179.99, TRUE);`
+`INSERT INTO rooms (room_type, price_per_night, is_available) VALUES     ('Queen', 89.99, TRUE),     ('King', 109.99, TRUE),     ('Suite', 179.99, TRUE);`
 
 Usage
 -----
 
 ### Starting the Server
 
-bash
-
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   uvicorn server:app --reload --host 0.0.0.0 --port 8000  ```  The WebSocket endpoint will be available at:  ```  ws://localhost:8000/llm-websocket/{call_id}   `
+`   uvicorn server:app --reload --host 0.0.0.0 --port 8000  ```  The WebSocket endpoint will be available at:  ```  ws://localhost:8000/llm-websocket/{call_id}   `
 
 ### WebSocket Protocol
 
 **Client → Server (User Input):**
 
-json
-
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   {    "interaction_type": "response_required",    "response_id": 1,    "transcript": [      {        "role": "user",        "content": "I'd like to book a room"      }    ]  }   `
+`   {    "interaction_type": "response_required",    "response_id": 1,    "transcript": [      {        "role": "user",        "content": "I'd like to book a room"      }    ]  }   `
 
 **Server → Client (AI Response):**
 
-json
-
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   {    "response_type": "response",    "response_id": 1,    "content": "I'd be happy to help you book a room. What type would you prefer: Queen, King, or Suite?",    "content_complete": true,    "end_call": false  }   `
+`   {    "response_type": "response",    "response_id": 1,    "content": "I'd be happy to help you book a room. What type would you prefer: Queen, King, or Suite?",    "content_complete": true,    "end_call": false  }   `
 
 Available Tools
 ---------------
